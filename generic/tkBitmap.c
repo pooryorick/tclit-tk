@@ -12,6 +12,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 
 #ifdef _WIN32
@@ -125,15 +136,22 @@ static void		InitBitmapObj(Tcl_Obj *objPtr);
  * field of the Tcl_Obj points to a TkBitmap object.
  */
 
-const TkObjType tkBitmapObjType = {
-    {"bitmap",			/* name */
-    FreeBitmapObjProc,		/* freeIntRepProc */
-    DupBitmapObjProc,		/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+TkObjType tkBitmapObjType = {
+    NULL, 0
 };
+
+
+void TkBitmapInit(void) {
+    TkObjType *tmpPtr = (TkObjType *)&tkBitmapObjType;
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"bitmap");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeBitmapObjProc);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupBitmapObjProc);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
+
 
 /*
  *----------------------------------------------------------------------
@@ -170,7 +188,7 @@ Tk_AllocBitmapFromObj(
 {
     TkBitmap *bitmapPtr;
 
-    if (objPtr->typePtr != &tkBitmapObjType.objType) {
+    if (objPtr->typePtr != tkBitmapObjType.objTypePtr) {
 	InitBitmapObj(objPtr);
     }
     bitmapPtr = (TkBitmap *)objPtr->internalRep.twoPtrValue.ptr1;
@@ -911,7 +929,7 @@ GetBitmapFromObj(
     Tcl_HashEntry *hashPtr;
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
 
-    if (objPtr->typePtr != &tkBitmapObjType.objType) {
+    if (objPtr->typePtr != tkBitmapObjType.objTypePtr) {
 	InitBitmapObj(objPtr);
     }
 
@@ -986,7 +1004,7 @@ InitBitmapObj(
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
 	typePtr->freeIntRepProc(objPtr);
     }
-    objPtr->typePtr = &tkBitmapObjType.objType;
+    objPtr->typePtr = tkBitmapObjType.objTypePtr;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
 }
 

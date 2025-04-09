@@ -11,6 +11,17 @@
  */
 
 /*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
+/*
  * Temporary flag for working on new config package.
  */
 
@@ -152,14 +163,20 @@ static void		DupOptionInternalRep(Tcl_Obj *, Tcl_Obj *);
  */
 
 static const TkObjType optionObjType = {
-    {"option",			/* name */
-    FreeOptionInternalRep,	/* freeIntRepProc */
-    DupOptionInternalRep,	/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+	NULL, 0
 };
+
+
+void TkConfigInit() {
+	TkObjType *tmpPtr = (TkObjType *)&optionObjType;
+	Tcl_ObjType *otPtr = Tcl_NewObjType();
+	Tcl_ObjTypeSetName(otPtr, (char *)"option");
+	Tcl_ObjTypeSetVersion(otPtr, 1);
+	Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeOptionInternalRep);
+	Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupOptionInternalRep);
+	tmpPtr->objTypePtr = otPtr;
+	return;
+}
 
 /*
  *--------------------------------------------------------------
@@ -1251,7 +1268,7 @@ GetOptionFromObj(
      * First, check to see if the object already has the answer cached.
      */
 
-    if (objPtr->typePtr == &optionObjType.objType) {
+    if (objPtr->typePtr == optionObjType.objTypePtr) {
 	if (objPtr->internalRep.twoPtrValue.ptr1 == (void *) tablePtr) {
 	    return (Option *) objPtr->internalRep.twoPtrValue.ptr2;
 	}
@@ -1273,7 +1290,7 @@ GetOptionFromObj(
     }
     objPtr->internalRep.twoPtrValue.ptr1 = (void *) tablePtr;
     objPtr->internalRep.twoPtrValue.ptr2 = (void *) bestPtr;
-    objPtr->typePtr = &optionObjType.objType;
+    objPtr->typePtr = optionObjType.objTypePtr;
     tablePtr->refCount++;
     return bestPtr;
 

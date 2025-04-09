@@ -12,6 +12,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 #include "tkColor.h"
 
@@ -56,15 +67,23 @@ static void		InitColorObj(Tcl_Obj *objPtr);
  * of the Tcl_Obj points to a TkColor object.
  */
 
-const TkObjType tkColorObjType = {
-    {"color",			/* name */
-    FreeColorObjProc,		/* freeIntRepProc */
-    DupColorObjProc,		/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V1(TkLengthOne)},
-    0
+TkObjType tkColorObjType = {
+	NULL, 0
 };
+
+void TkColorInit() {
+	TkObjType *tmpPtr = (TkObjType *)&tkColorObjType;
+	Tcl_ObjType *otPtr = Tcl_NewObjType();
+	Tcl_ObjInterface *oiPtr = Tcl_NewObjInterface();
+	Tcl_ObjTypeSetName(otPtr, (char *)"color");
+	Tcl_ObjTypeSetVersion(otPtr, 2);
+	Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeColorObjProc);
+	Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupColorObjProc);
+	Tcl_ObjInterfaceSetFnListLength(oiPtr ,TkLengthOne);
+	Tcl_ObjTypeSetInterface(otPtr ,oiPtr);
+	tmpPtr->objTypePtr = otPtr;
+	return;
+}
 
 /*
  *----------------------------------------------------------------------
@@ -101,7 +120,7 @@ Tk_AllocColorFromObj(
 {
     TkColor *tkColPtr;
 
-    if (objPtr->typePtr != &tkColorObjType.objType) {
+    if (objPtr->typePtr != tkColorObjType.objTypePtr) {
 	InitColorObj(objPtr);
     }
     tkColPtr = (TkColor *) objPtr->internalRep.twoPtrValue.ptr1;
@@ -663,7 +682,7 @@ Tk_GetColorFromObj(
     Tcl_HashEntry *hashPtr;
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
 
-    if (objPtr->typePtr != &tkColorObjType.objType) {
+    if (objPtr->typePtr != tkColorObjType.objTypePtr) {
 	InitColorObj(objPtr);
     }
 
@@ -751,7 +770,7 @@ InitColorObj(
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
 	typePtr->freeIntRepProc(objPtr);
     }
-    objPtr->typePtr = &tkColorObjType.objType;
+    objPtr->typePtr = tkColorObjType.objTypePtr;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
 }
 

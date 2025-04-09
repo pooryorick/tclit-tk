@@ -5,6 +5,17 @@
  *
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 #include "ttkTheme.h"
 
@@ -49,22 +60,25 @@ static int  StateSpecSetFromAny(Tcl_Interp *interp, Tcl_Obj *obj);
 static void StateSpecDupIntRep(Tcl_Obj *, Tcl_Obj *);
 static void StateSpecUpdateString(Tcl_Obj *);
 
-static const
-TkObjType StateSpecObjType =
-{
-    {"StateSpec",
-    0,
-    StateSpecDupIntRep,
-    StateSpecUpdateString,
-    StateSpecSetFromAny,
-    TCL_OBJTYPE_V0},
-    0
-};
+static const TkObjType StateSpecObjType;
+
+
+void ttkStateInit(void) {
+    TkObjType *tmpPtr = (TkObjType *)&StateSpecObjType;
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"StateSpec");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, StateSpecDupIntRep);
+    Tcl_ObjTypeSetUpdateStringProc(otPtr, StateSpecUpdateString);
+    Tcl_ObjTypeSetSetFromAnyProc(otPtr, StateSpecSetFromAny);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
 
 static void StateSpecDupIntRep(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr)
 {
     copyPtr->internalRep.wideValue = srcPtr->internalRep.wideValue;
-    copyPtr->typePtr = &StateSpecObjType.objType;
+    copyPtr->typePtr = StateSpecObjType.objTypePtr;
 }
 
 static int StateSpecSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
@@ -116,7 +130,7 @@ static int StateSpecSetFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr)
 	objPtr->typePtr->freeIntRepProc(objPtr);
     }
 
-    objPtr->typePtr = &StateSpecObjType.objType;
+    objPtr->typePtr = StateSpecObjType.objTypePtr;
     objPtr->internalRep.wideValue = ((Tcl_WideInt)onbits << 32) | offbits;
 
     return TCL_OK;
@@ -165,7 +179,7 @@ Tcl_Obj *Ttk_NewStateSpecObj(unsigned int onbits, unsigned int offbits)
     Tcl_Obj *objPtr = Tcl_NewObj();
 
     Tcl_InvalidateStringRep(objPtr);
-    objPtr->typePtr = &StateSpecObjType.objType;
+    objPtr->typePtr = StateSpecObjType.objTypePtr;
     objPtr->internalRep.wideValue = ((Tcl_WideInt)onbits << 32) | offbits;
 
     return objPtr;
@@ -176,7 +190,7 @@ int Ttk_GetStateSpecFromObj(
     Tcl_Obj *objPtr,
     Ttk_StateSpec *spec)
 {
-    if (objPtr->typePtr != &StateSpecObjType.objType) {
+    if (objPtr->typePtr != StateSpecObjType.objTypePtr) {
 	int status = StateSpecSetFromAny(interp, objPtr);
 	if (status != TCL_OK)
 	    return status;

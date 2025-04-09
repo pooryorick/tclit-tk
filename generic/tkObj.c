@@ -9,6 +9,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 
 /*
@@ -48,7 +59,7 @@ typedef struct PixelRep {
  */
 
 typedef struct {
-    const Tcl_ObjType *doubleTypePtr;
+    Tcl_ObjType *doubleTypePtr;
 } ThreadSpecificData;
 static Tcl_ThreadDataKey dataKey;
 
@@ -98,21 +109,18 @@ static int		SetWindowFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr);
  * initial display-independent settings.
  */
 
-static const TkObjType pixelObjType = {
-    {"pixel",			/* name */
-    FreePixelInternalRep,	/* freeIntRepProc */
-    DupPixelInternalRep,	/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V1(TkLengthOne)},
-    0
+TkObjType pixelObjType = {
+	NULL, 0
 };
 
-Tcl_Size
+int
 TkLengthOne(
-    TCL_UNUSED(Tcl_Obj *))
-{
-    return 1;
+	TCL_UNUSED(Tcl_Interp *)
+    ,TCL_UNUSED(Tcl_Obj *)
+	,Tcl_Size *lengthPtr
+) {
+	*lengthPtr = 1;
+	return TCL_OK;
 }
 
 /*
@@ -121,14 +129,8 @@ TkLengthOne(
  * initial display-independent settings.
  */
 
-static const TkObjType mmObjType = {
-    {"mm",			/* name */
-    FreeMMInternalRep,		/* freeIntRepProc */
-    DupMMInternalRep,		/* dupIntRepProc */
-    UpdateStringOfMM,		/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V1(TkLengthOne)},
-    0
+TkObjType mmObjType = {
+	NULL, 0
 };
 
 /*
@@ -136,14 +138,44 @@ static const TkObjType mmObjType = {
  * Tcl object.
  */
 
-static const TkObjType windowObjType = {
-    {"window",			/* name */
-    FreeWindowInternalRep,	/* freeIntRepProc */
-    DupWindowInternalRep,	/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+TkObjType windowObjType = {
+	NULL, 0
+};
+
+
+void TkObjInit() {
+    TkObjType *tmpPtr = (TkObjType *)&pixelObjType;
+    Tcl_ObjInterface *oiPtr = Tcl_NewObjInterface();
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"pixel");
+    Tcl_ObjTypeSetVersion(otPtr, 2);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreePixelInternalRep);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupPixelInternalRep);
+    Tcl_ObjInterfaceSetFnListLength(oiPtr ,TkLengthOne);
+    Tcl_ObjTypeSetInterface(otPtr ,oiPtr);
+    tmpPtr->objTypePtr = otPtr;
+
+    tmpPtr = (TkObjType *)&mmObjType;
+    oiPtr = Tcl_NewObjInterface();
+    otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"mm");
+    Tcl_ObjTypeSetVersion(otPtr, 2);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeMMInternalRep);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupMMInternalRep);
+	Tcl_ObjTypeSetUpdateStringProc(otPtr, UpdateStringOfMM);
+    Tcl_ObjInterfaceSetFnListLength(oiPtr ,TkLengthOne);
+    Tcl_ObjTypeSetInterface(otPtr ,oiPtr);
+    tmpPtr->objTypePtr = otPtr;
+
+    tmpPtr = (TkObjType *)&windowObjType;
+    otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"window");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeWindowInternalRep);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupWindowInternalRep);
+    tmpPtr->objTypePtr = otPtr;
+
+    return;
 };
 
 /*
@@ -254,7 +286,7 @@ GetPixelsFromObjEx(
 	1.0,	10.0,	25.4,	0.35277777777777775 /*25.4 / 72.0*/
     };
 
-    if (objPtr->typePtr != &pixelObjType.objType) {
+    if (objPtr->typePtr != pixelObjType.objTypePtr) {
 
 	if (Tcl_GetDoubleFromObj(NULL, objPtr, &d) == TCL_OK) {
 	    if (dblPtr != NULL) {
@@ -266,7 +298,7 @@ GetPixelsFromObjEx(
     }
 
  retry:
-    fresh = (objPtr->typePtr != &pixelObjType.objType);
+    fresh = (objPtr->typePtr != pixelObjType.objTypePtr);
     if (fresh) {
 	result = SetPixelFromAny(interp, objPtr);
 	if (result != TCL_OK) {
@@ -373,7 +405,7 @@ Tk_GetDoublePixelsFromObj(
     if (result != TCL_OK) {
 	return result;
     }
-    if (objPtr->typePtr == &pixelObjType.objType && !SIMPLE_PIXELREP(objPtr)) {
+    if (objPtr->typePtr == pixelObjType.objTypePtr && !SIMPLE_PIXELREP(objPtr)) {
 	PixelRep *pixelPtr = GET_COMPLEXPIXEL(objPtr);
 
 	if (pixelPtr->units >= 0) {
@@ -560,7 +592,7 @@ SetPixelFromAny(
 	typePtr->freeIntRepProc(objPtr);
     }
 
-    objPtr->typePtr = &pixelObjType.objType;
+    objPtr->typePtr = pixelObjType.objTypePtr;
 
     i = (int) d;
     if ((units < 0) && (i == d)) {
@@ -612,7 +644,7 @@ Tk_GetMMFromObj(
 	10.0,	25.4,	1.0,	0.35277777777777775 /*25.4 / 72.0*/
     };
 
-    if (objPtr->typePtr != &mmObjType.objType) {
+    if (objPtr->typePtr != mmObjType.objTypePtr) {
 	result = SetMMFromAny(interp, objPtr);
 	if (result != TCL_OK) {
 	    return result;
@@ -842,7 +874,7 @@ SetMMFromAny(
 	typePtr->freeIntRepProc(objPtr);
     }
 
-    objPtr->typePtr = &mmObjType.objType;
+    objPtr->typePtr = mmObjType.objTypePtr;
 
     mmPtr = (MMRep *)ckalloc(sizeof(MMRep));
     mmPtr->value = d;
@@ -886,7 +918,7 @@ TkGetWindowFromObj(
     TkMainInfo *mainPtr = ((TkWindow *) tkwin)->mainPtr;
     WindowRep *winPtr;
 
-    if (objPtr->typePtr != &windowObjType.objType) {
+    if (objPtr->typePtr != windowObjType.objTypePtr) {
 	int result = SetWindowFromAny(interp, objPtr);
 	if (result != TCL_OK) {
 	    return result;
@@ -961,7 +993,7 @@ SetWindowFromAny(
     winPtr->epoch = 0;
 
     objPtr->internalRep.twoPtrValue.ptr1 = winPtr;
-    objPtr->typePtr = &windowObjType.objType;
+    objPtr->typePtr = windowObjType.objTypePtr;
 
     return TCL_OK;
 }
@@ -1101,7 +1133,7 @@ TkParsePadAmount(
      * shimmered between a list and a pixel spec.
      */
 
-    if (specObj->typePtr == &pixelObjType.objType) {
+    if (specObj->typePtr == pixelObjType.objTypePtr) {
 	if (Tk_GetPixelsFromObj(interp, tkwin, specObj, &firstInt) != TCL_OK){
 	    Tcl_SetObjResult(interp, Tcl_ObjPrintf(
 		    "bad pad value \"%s\": must be positive screen distance",
@@ -1189,16 +1221,27 @@ TkParsePadAmount(
 void
 TkRegisterObjTypes(void)
 {
-    Tcl_RegisterObjType(&tkBorderObjType.objType);
-    Tcl_RegisterObjType(&tkBitmapObjType.objType);
-    Tcl_RegisterObjType(&tkColorObjType.objType);
-    Tcl_RegisterObjType(&tkCursorObjType.objType);
-    Tcl_RegisterObjType(&tkFontObjType.objType);
-    Tcl_RegisterObjType(&mmObjType.objType);
-    Tcl_RegisterObjType(&pixelObjType.objType);
-    Tcl_RegisterObjType(&tkStateKeyObjType.objType);
-    Tcl_RegisterObjType(&windowObjType.objType);
-    Tcl_RegisterObjType(&tkTextIndexType.objType);
+	Tk3dInit();
+	TkBitmapInit();
+	TkColorInit();
+	TkConfigInit();
+	TkCursorInit();
+	TkFontInit();
+	TkObjInit();
+	TkStyleInit();
+	TkTextInit();
+	TkUtilInit();
+
+    Tcl_RegisterObjType(tkBorderObjType.objTypePtr);
+    Tcl_RegisterObjType(tkBitmapObjType.objTypePtr);
+    Tcl_RegisterObjType(tkColorObjType.objTypePtr);
+    Tcl_RegisterObjType(tkCursorObjType.objTypePtr);
+    Tcl_RegisterObjType(tkFontObjType.objTypePtr);
+    Tcl_RegisterObjType(mmObjType.objTypePtr);
+    Tcl_RegisterObjType(pixelObjType.objTypePtr);
+    Tcl_RegisterObjType(tkStateKeyObjType.objTypePtr);
+    Tcl_RegisterObjType(windowObjType.objTypePtr);
+    Tcl_RegisterObjType(tkTextIndexType.objTypePtr);
 }
 
 /*

@@ -10,6 +10,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 
 /*
@@ -151,14 +162,21 @@ static int		SetStyleFromAny(Tcl_Interp *interp, Tcl_Obj *objPtr);
  */
 
 static const TkObjType styleObjType = {
-    {"style",			/* name */
-    FreeStyleObjProc,		/* freeIntRepProc */
-    DupStyleObjProc,		/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+    NULL, 0
 };
+
+
+void TkStyleInit(void) {
+    TkObjType *tmpPtr = (TkObjType *)&styleObjType;
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"style");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeStyleObjProc);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupStyleObjProc);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
+
 
 /*
  *---------------------------------------------------------------------------
@@ -1404,7 +1422,7 @@ Tk_AllocStyleFromObj(
     Tcl_Obj *objPtr)		/* Object containing name of the style to
 				 * retrieve. */
 {
-    if (objPtr->typePtr != &styleObjType.objType) {
+    if (objPtr->typePtr != styleObjType.objTypePtr) {
 	if (SetStyleFromAny(interp, objPtr) != TCL_OK) {
 	    return NULL;
 	}
@@ -1453,7 +1471,7 @@ SetStyleFromAny(
     if (style == NULL) {
 	return TCL_ERROR;
     }
-    objPtr->typePtr = &styleObjType.objType;
+    objPtr->typePtr = styleObjType.objTypePtr;
     objPtr->internalRep.twoPtrValue.ptr1 = style;
 
     return TCL_OK;

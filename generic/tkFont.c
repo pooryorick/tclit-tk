@@ -11,6 +11,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 #include "tkFont.h"
 #if defined(MAC_OSX_TK)
@@ -353,15 +364,21 @@ static void		UpdateDependentFonts(TkFontInfo *fiPtr,
  * font object points to the TkFont structure for the font, or NULL.
  */
 
-const TkObjType tkFontObjType = {
-    {"font",			/* name */
-    FreeFontObjProc,		/* freeIntRepProc */
-    DupFontObjProc,		/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+TkObjType tkFontObjType = {
+    NULL, 0
 };
+
+
+void TkFontInit(void) {
+    TkObjType *tmpPtr = (TkObjType *)&tkFontObjType;
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"font");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeFontObjProc);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupFontObjProc);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
 
 /*
  *---------------------------------------------------------------------------
@@ -1117,7 +1134,7 @@ Tk_AllocFontFromObj(
     int isNew, descent;
     NamedFont *nfPtr;
 
-    if (objPtr->typePtr != &tkFontObjType.objType
+    if (objPtr->typePtr != tkFontObjType.objTypePtr
 	    || objPtr->internalRep.twoPtrValue.ptr2 != fiPtr) {
 	SetFontFromAny(interp, objPtr);
     }
@@ -1302,7 +1319,7 @@ Tk_GetFontFromObj(
     TkFont *fontPtr;
     Tcl_HashEntry *hashPtr;
 
-    if (objPtr->typePtr != &tkFontObjType.objType
+    if (objPtr->typePtr != tkFontObjType.objTypePtr
 	    || objPtr->internalRep.twoPtrValue.ptr2 != fiPtr) {
 	SetFontFromAny(NULL, objPtr);
     }
@@ -1383,7 +1400,7 @@ SetFontFromAny(
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
 	typePtr->freeIntRepProc(objPtr);
     }
-    objPtr->typePtr = &tkFontObjType.objType;
+    objPtr->typePtr = tkFontObjType.objTypePtr;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
     objPtr->internalRep.twoPtrValue.ptr2 = NULL;
 

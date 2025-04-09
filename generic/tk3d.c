@@ -11,6 +11,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 #include "tk3d.h"
 
@@ -46,15 +57,21 @@ static void		ShiftLine(XPoint *p1Ptr, XPoint *p2Ptr,
  * is set.
  */
 
-const TkObjType tkBorderObjType = {
-    {"border",			/* name */
-    FreeBorderObjProc,		/* freeIntRepProc */
-    DupBorderObjProc,		/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+TkObjType tkBorderObjType = {
+	NULL, 0
 };
+
+
+void Tk3dInit(void) {
+	TkObjType *tmpPtr = (TkObjType *)&tkBorderObjType;
+	Tcl_ObjType *otPtr = Tcl_NewObjType();
+	Tcl_ObjTypeSetName(otPtr, (char *)"border");
+	Tcl_ObjTypeSetVersion(otPtr, 1);
+	Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeBorderObjProc);
+	Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupBorderObjProc);
+	tmpPtr->objTypePtr = otPtr;
+	return;
+}
 
 /*
  *----------------------------------------------------------------------
@@ -89,7 +106,7 @@ Tk_Alloc3DBorderFromObj(
 {
     TkBorder *borderPtr;
 
-    if (objPtr->typePtr != &tkBorderObjType.objType) {
+    if (objPtr->typePtr != tkBorderObjType.objTypePtr) {
 	InitBorderObj(objPtr);
     }
     borderPtr = (TkBorder *)objPtr->internalRep.twoPtrValue.ptr1;
@@ -1251,7 +1268,7 @@ Tk_Get3DBorderFromObj(
     Tcl_HashEntry *hashPtr;
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
 
-    if (objPtr->typePtr != &tkBorderObjType.objType) {
+    if (objPtr->typePtr != tkBorderObjType.objTypePtr) {
 	InitBorderObj(objPtr);
     }
 
@@ -1343,7 +1360,7 @@ InitBorderObj(
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
 	typePtr->freeIntRepProc(objPtr);
     }
-    objPtr->typePtr = &tkBorderObjType.objType;
+    objPtr->typePtr = tkBorderObjType.objTypePtr;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
 }
 

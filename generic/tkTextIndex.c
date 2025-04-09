@@ -11,6 +11,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 #include "tkText.h"
 #include "default.h"
@@ -75,15 +86,21 @@ static void		UpdateStringOfTextIndex(Tcl_Obj *objPtr);
  * text widgets internally.
  */
 
-const TkObjType tkTextIndexType = {
-    {"textindex",		/* name */
-    FreeTextIndexInternalRep,	/* freeIntRepProc */
-    DupTextIndexInternalRep,	/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+TkObjType tkTextIndexType = {
+    NULL, 0
 };
+
+
+void TkTextInit(void) {
+    TkObjType *tmpPtr = (TkObjType *)&tkTextIndexType;
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"textindex");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeTextIndexInternalRep);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupTextIndexInternalRep);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
 
 static void
 FreeTextIndexInternalRep(
@@ -126,7 +143,7 @@ DupTextIndexInternalRep(
     }
     SET_TEXTINDEX(copyPtr, dupIndexPtr);
     SET_INDEXEPOCH(copyPtr, epoch);
-    copyPtr->typePtr = &tkTextIndexType.objType;
+    copyPtr->typePtr = tkTextIndexType.objTypePtr;
 }
 
 /*
@@ -188,7 +205,7 @@ MakeObjIndex(
     indexPtr->linePtr = origPtr->linePtr;
     indexPtr->byteIndex = origPtr->byteIndex;
     SET_TEXTINDEX(objPtr, indexPtr);
-    objPtr->typePtr = &tkTextIndexType.objType;
+    objPtr->typePtr = tkTextIndexType.objTypePtr;
     indexPtr->textPtr = textPtr;
 
     if (textPtr != NULL) {
@@ -211,7 +228,7 @@ TkTextGetIndexFromObj(
     TkTextIndex *indexPtr = NULL;
     int cache;
 
-    if (objPtr->typePtr == &tkTextIndexType.objType) {
+    if (objPtr->typePtr == tkTextIndexType.objTypePtr) {
 	Tcl_Size epoch;
 
 	indexPtr = GET_TEXTINDEX(objPtr);

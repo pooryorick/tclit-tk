@@ -12,6 +12,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #ifndef _TKINT
 #define _TKINT
 
@@ -1040,17 +1051,17 @@ typedef struct TkpClipMask {
  */
 
 typedef struct {
-    Tcl_ObjType objType;
+    Tcl_ObjType* objTypePtr;
     size_t version;
 } TkObjType;
 
-MODULE_SCOPE const TkObjType tkBorderObjType;
-MODULE_SCOPE const TkObjType tkBitmapObjType;
-MODULE_SCOPE const TkObjType tkColorObjType;
-MODULE_SCOPE const TkObjType tkCursorObjType;
-MODULE_SCOPE const TkObjType tkFontObjType;
-MODULE_SCOPE const TkObjType tkStateKeyObjType;
-MODULE_SCOPE const TkObjType tkTextIndexType;
+MODULE_SCOPE TkObjType tkBorderObjType;
+MODULE_SCOPE TkObjType tkBitmapObjType;
+MODULE_SCOPE TkObjType tkColorObjType;
+MODULE_SCOPE TkObjType tkCursorObjType;
+MODULE_SCOPE TkObjType tkFontObjType;
+MODULE_SCOPE TkObjType tkStateKeyObjType;
+MODULE_SCOPE TkObjType tkTextIndexType;
 
 /*
  * Miscellaneous variables shared among Tk modules but not exported to the
@@ -1182,7 +1193,24 @@ MODULE_SCOPE int	TkSetGeometryContainer(Tcl_Interp *interp,
 MODULE_SCOPE void	TkFreeGeometryContainer(Tk_Window tkwin,
 			    const char *name);
 
+
+
+
+
+
+MODULE_SCOPE void	Tk3dInit(void);
+MODULE_SCOPE void	TkBitmapInit(void);
+MODULE_SCOPE void	TkColorInit(void);
+MODULE_SCOPE void	TkConfigInit(void);
+MODULE_SCOPE void	TkCursorInit(void);
+MODULE_SCOPE void	TkEventInit(void);
+MODULE_SCOPE void	TkFontInit(void);
+MODULE_SCOPE void	TkFontInit(void);
+MODULE_SCOPE void	TkStyleInit(void);
+MODULE_SCOPE void	TkUtilInit(void);
+MODULE_SCOPE void	TkTextInit(void);
 MODULE_SCOPE void	TkRegisterObjTypes(void);
+
 MODULE_SCOPE Tcl_ObjCmdProc TkDeadAppObjCmd;
 MODULE_SCOPE int	TkCanvasGetCoordObj(Tcl_Interp *interp,
 			    Tk_Canvas canvas, Tcl_Obj *obj,
@@ -1222,7 +1250,7 @@ MODULE_SCOPE void	TkpDrawFrameEx(Tk_Window tkwin, Drawable drawable,
 			    int borderWidth, int relief);
 MODULE_SCOPE void	TkpShowBusyWindow(TkBusy busy);
 MODULE_SCOPE void	TkpHideBusyWindow(TkBusy busy);
-MODULE_SCOPE Tcl_Size	TkLengthOne(Tcl_Obj *);
+MODULE_SCOPE Tcl_ObjInterfaceListLengthProc TkLengthOne;
 MODULE_SCOPE void	TkpMakeTransparentWindowExist(Tk_Window tkwin,
 			    Window parent);
 MODULE_SCOPE void	TkpCreateBusy(Tk_FakeWin *winPtr, Tk_Window tkRef,

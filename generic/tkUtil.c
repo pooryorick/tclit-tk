@@ -11,6 +11,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 
 #ifdef _WIN32
@@ -22,15 +33,18 @@
  * object, used for quickly finding a mapping in a TkStateMap.
  */
 
-const TkObjType tkStateKeyObjType = {
-    {"statekey",		/* name */
-    NULL,			/* freeIntRepProc */
-    NULL,			/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V0},
-    0
+TkObjType tkStateKeyObjType = {
+    NULL, 0
 };
+
+void TkUtilInit(void) {
+    TkObjType *tmpPtr = (TkObjType *)&tkStateKeyObjType;
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"statekey");
+    Tcl_ObjTypeSetVersion(otPtr, 1);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
 
 /*
  *--------------------------------------------------------------
@@ -1042,7 +1056,7 @@ TkFindStateNumObj(
      * See if the value is in the object cache.
      */
 
-    if ((keyPtr->typePtr == &tkStateKeyObjType.objType)
+    if ((keyPtr->typePtr == tkStateKeyObjType.objTypePtr)
 	    && (keyPtr->internalRep.twoPtrValue.ptr1 == mapPtr)) {
 	return PTR2INT(keyPtr->internalRep.twoPtrValue.ptr2);
     }
@@ -1060,7 +1074,7 @@ TkFindStateNumObj(
 	    }
 	    keyPtr->internalRep.twoPtrValue.ptr1 = (void *) mapPtr;
 	    keyPtr->internalRep.twoPtrValue.ptr2 = INT2PTR(mPtr->numKey);
-	    keyPtr->typePtr = &tkStateKeyObjType.objType;
+	    keyPtr->typePtr = tkStateKeyObjType.objTypePtr;
 	    return mPtr->numKey;
 	}
     }
