@@ -12,6 +12,17 @@
  * this file, and for a DISCLAIMER OF ALL WARRANTIES.
  */
 
+/*
+ * Copyright © 2024-2025 Nathan Coulter
+
+ * You may distribute and/or modify this program under the terms of the GNU
+ * Affero General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+
+ * See the file "COPYING" for information on usage and redistribution
+ * of this file, and for a DISCLAIMER OF ALL WARRANTIES.
+*/
+
 #include "tkInt.h"
 
 #ifdef _WIN32
@@ -59,15 +70,24 @@ static void		InitCursorObj(Tcl_Obj *objPtr);
  * option is set.
  */
 
-const TkObjType tkCursorObjType = {
-    {"cursor",			/* name */
-    FreeCursorObjProc,		/* freeIntRepProc */
-    DupCursorObjProc,		/* dupIntRepProc */
-    NULL,			/* updateStringProc */
-    NULL,			/* setFromAnyProc */
-    TCL_OBJTYPE_V1(TkLengthOne)},
-    0
+TkObjType tkCursorObjType = {
+    NULL, 0
 };
+
+
+void TkCursorInit() {
+    TkObjType *tmpPtr = (TkObjType *)&tkCursorObjType;
+    Tcl_ObjInterface *oiPtr = Tcl_NewObjInterface();
+    Tcl_ObjType *otPtr = Tcl_NewObjType();
+    Tcl_ObjTypeSetName(otPtr, (char *)"cursor");
+    Tcl_ObjTypeSetVersion(otPtr, 2);
+    Tcl_ObjTypeSetFreeInternalRepProc(otPtr, FreeCursorObjProc);
+    Tcl_ObjTypeSetDupInternalRepProc(otPtr, DupCursorObjProc);
+    Tcl_ObjInterfaceSetFnListLength(oiPtr ,TkLengthOne);
+    Tcl_ObjTypeSetInterface(otPtr ,oiPtr);
+    tmpPtr->objTypePtr = otPtr;
+    return;
+}
 
 /*
  *----------------------------------------------------------------------
@@ -103,7 +123,7 @@ Tk_AllocCursorFromObj(
 {
     TkCursor *cursorPtr;
 
-    if (objPtr->typePtr != &tkCursorObjType.objType) {
+    if (objPtr->typePtr != tkCursorObjType.objTypePtr) {
 	InitCursorObj(objPtr);
     }
     cursorPtr = (TkCursor *)objPtr->internalRep.twoPtrValue.ptr1;
@@ -700,7 +720,7 @@ GetCursorFromObj(
     Tcl_HashEntry *hashPtr;
     TkDisplay *dispPtr = ((TkWindow *) tkwin)->dispPtr;
 
-    if (objPtr->typePtr != &tkCursorObjType.objType) {
+    if (objPtr->typePtr != tkCursorObjType.objTypePtr) {
 	InitCursorObj(objPtr);
     }
 
@@ -777,7 +797,7 @@ InitCursorObj(
     if ((typePtr != NULL) && (typePtr->freeIntRepProc != NULL)) {
 	typePtr->freeIntRepProc(objPtr);
     }
-    objPtr->typePtr = &tkCursorObjType.objType;
+    objPtr->typePtr = tkCursorObjType.objTypePtr;
     objPtr->internalRep.twoPtrValue.ptr1 = NULL;
 }
 
